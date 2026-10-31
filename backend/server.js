@@ -7,6 +7,34 @@ const learningPathRoutes = require("./routes/learningPathRoutes");
 
 const app = express();
 const port = process.env.PORT || 3000;
+const developmentOrigins = ["http://localhost:5173", "http://127.0.0.1:5173"];
+const allowedOrigins = new Set(
+  [
+    ...developmentOrigins,
+    ...(process.env.FRONTEND_URLS || "")
+      .split(",")
+      .map((origin) => origin.trim())
+      .filter(Boolean),
+  ],
+);
+
+app.use((req, res, next) => {
+  const origin = req.get("Origin");
+  res.vary("Origin");
+
+  if (origin && allowedOrigins.has(origin)) {
+    res.set("Access-Control-Allow-Origin", origin);
+    res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.set("Access-Control-Allow-Headers", "Content-Type");
+  }
+
+  if (req.method === "OPTIONS") {
+    res.sendStatus(204);
+    return;
+  }
+
+  next();
+});
 
 app.use(express.json({ limit: "16kb" }));
 

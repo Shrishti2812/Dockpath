@@ -41,6 +41,40 @@ Open the local URL printed by Vite. Its development server proxies `/api`
 requests to `http://localhost:3000`, so start the backend first. To create a
 production bundle, run `npm run build` in `frontend/`.
 
+## Deployment
+
+Deploy the backend and frontend as separate services:
+
+1. Deploy `backend/` as a Node.js service. Use `npm start` as the start command
+   and configure `GEMINI_API_KEY` in the hosting provider's environment settings.
+   The platform should provide `PORT`.
+2. Deploy `frontend/` to Vercel. Set its Root Directory to `frontend`; Vercel
+   will build with `npm run build` and serve `dist/`. The
+   [Vercel configuration](frontend/vercel.json) rewrites app routes to
+   `index.html`.
+3. In the backend's environment settings, set `FRONTEND_URLS` to the exact
+   browser origins allowed to call the API, comma-separated if there is more
+   than one. For example:
+
+   ```env
+   FRONTEND_URLS=https://your-app.vercel.app,https://www.your-domain.com
+   ```
+
+   Include the scheme and host, but no path or trailing slash. The local Vite
+   origins `http://localhost:5173` and `http://127.0.0.1:5173` are allowed for
+   development, including when testing against the deployed backend.
+4. In Vercel, set `VITE_API_BASE_URL` to the deployed backend's origin, for
+   example `https://your-backend.example.com`. Do not append `/api` or a trailing
+   slash. This is a build-time variable, so redeploy the frontend after changing
+   it. Keep `GEMINI_API_KEY` only on the backend; never add it to a `VITE_`
+   variable.
+5. Check `https://your-backend.example.com/api/health` returns
+   `{"status":"ok"}`, then open the Vercel site and submit a learning goal.
+
+The frontend calls
+`VITE_API_BASE_URL + /api/learning-path`. In local development the variable can
+remain empty, and Vite proxies `/api` to `http://localhost:3000`.
+
 The interface uses a responsive two-column workspace: learners provide a
 documentation URL and goal in the form, while the results panel displays the
 three ordered sections with their explanations. Form state, loading, and API

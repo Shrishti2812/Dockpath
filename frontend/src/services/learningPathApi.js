@@ -1,14 +1,21 @@
+
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').trim().replace(/\/+$/, '')
+
 export async function createLearningPath({ documentationUrl, learningGoal }) {
   let response
 
+  if (import.meta.env.PROD && !API_BASE_URL) {
+    throw new Error('Backend URL is missing. Set VITE_API_BASE_URL in the frontend deployment settings.')
+  }
+
   try {
-    response = await fetch('/api/learning-path', {
+    response = await fetch(`${API_BASE_URL}/api/learning-path`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ documentationUrl, learningGoal }),
     })
   } catch {
-    throw new Error('Could not reach Dockpath. Check that the backend is running.')
+    throw new Error('Could not reach the backend. Check its URL and CORS configuration.')
   }
 
   const result = await response.json().catch(() => null)
