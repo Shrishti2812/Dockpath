@@ -63,7 +63,7 @@ Deploy the backend and frontend as separate services:
    Include the scheme and host, but no path or trailing slash. The local Vite
    origins `http://localhost:5173` and `http://127.0.0.1:5173` are allowed for
    development, including when testing against the deployed backend.
-4. In Vercel, set `VITE_API_BASE_URL` to the deployed backend's origin, for
+4. In Vercel, set `VITE_API_URL` to the deployed backend's origin, for
    example `https://your-backend.example.com`. Do not append `/api` or a trailing
    slash. This is a build-time variable, so redeploy the frontend after changing
    it. Keep `GEMINI_API_KEY` only on the backend; never add it to a `VITE_`
@@ -71,9 +71,9 @@ Deploy the backend and frontend as separate services:
 5. Check `https://your-backend.example.com/api/health` returns
    `{"status":"ok"}`, then open the Vercel site and submit a learning goal.
 
-The frontend calls
-`VITE_API_BASE_URL + /api/learning-path`. In local development the variable can
-remain empty, and Vite proxies `/api` to `http://localhost:3000`.
+The frontend calls `VITE_API_URL + /api/learning-path`. It also accepts
+`VITE_API_BASE_URL` as an alternative name. If neither variable is set in local
+development, Vite proxies `/api` to `http://localhost:3000`.
 
 The interface uses a responsive two-column workspace: learners provide a
 documentation URL and goal in the form, while the results panel displays the
