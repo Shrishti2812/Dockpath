@@ -1,22 +1,12 @@
 
-const { GoogleGenAI } = require("@google/genai");
+const { getAIProvider } = require("./aiProvider");
 
 async function generate({ pages }, learningGoal) {
-  if (!process.env.GEMINI_API_KEY) {
-    const error = new Error("GEMINI_API_KEY is missing from .env.");
-    error.status = 500;
-    throw error;
-  }
-
   if (!Array.isArray(pages) || pages.length === 0) {
     const error = new Error("No documentation pages were supplied.");
     error.status = 422;
     throw error;
   }
-
-  const ai = new GoogleGenAI({
-    apiKey: process.env.GEMINI_API_KEY,
-  });
 
   // Prepare each fetched page with its own URL, headings and content.
   const documentationContext = pages.map((page, index) => `
@@ -37,21 +27,33 @@ ${page.content}
     url: page.url,
     headings: page.headings,
   }));
-console.log(
-  "Pages provided to Gemini:",
-  pages.map(page => ({
+
+  console.log("Documentation pages provided:", pages.map(page => ({
     url: page.url,
     headings: page.headings
-  }))
-);
- 
+  })));
+
   try {
-    const result = await ai.models.generateContent({
-      model: "gemini-3.5-flash-lite",
-      config: {
-        responseMimeType: "application/json",
-      },
-      contents: `You are Dockpath, a documentation navigation guide.
+    const providerName = process.env.AI_PROVIDER || "gemini";
+
+    const apiKey = providerName === "qwen"
+      ? process.env.BHARATCODE_API_KEY
+      : process.env.GEMINI_API_KEY;
+
+    if (!apiKey) {
+      const error = new Error(
+        `${providerName === "qwen" ? "BHARATCODE_API_KEY" : "GEMINI_API_KEY"} is missing from .env.`
+      );
+      error.status = 500;
+      throw error;
+    }
+
+    const generateWithAI = getAIProvider();
+
+    console.log(`Generating learning path using ${providerName}`);
+
+    const generatedText = await generateWithAI(
+      `You are Dockpath, a documentation navigation guide.
 
 Your task is to create a personalized reading path using the supplied
 documentation pages.
@@ -138,10 +140,10 @@ LEARNING GOAL:
 ${learningGoal}
 
 SUPPLIED DOCUMENTATION:
-${documentationContext}`,
-    });
+${documentationContext}`
+    );
 
-    if (!result.text) {
+    if (!generatedText) {
       const error = new Error(
         "The learning path generator returned an empty result."
       );
@@ -152,7 +154,7 @@ ${documentationContext}`,
     let response;
 
     try {
-      response = JSON.parse(result.text);
+      response = JSON.parse(generatedText);
     } catch {
       const error = new Error(
         "The learning path generator returned invalid JSON."
@@ -200,6 +202,8 @@ ${documentationContext}`,
     if (error.status) {
       throw error;
     }
+
+    console.error("Learning path generation error:", error);
 
     const generationError = new Error(
       "The learning path could not be generated."
